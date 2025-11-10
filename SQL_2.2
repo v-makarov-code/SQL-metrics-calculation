@@ -1,0 +1,45 @@
+WITH active_users AS 
+(
+SELECT st_id,
+       SUM(correct::integer) AS sum
+  FROM peas
+ GROUP BY st_id
+HAVING SUM(correct::integer) >= 10
+), 
+active_math_users AS 
+(
+SELECT st_id,
+       subject,
+       SUM(correct::integer) AS sum
+  FROM peas
+ GROUP BY st_id, subject
+HAVING SUM(correct::integer) >= 2 AND subject = 'Math'
+)
+
+SELECT s.test_grp, 
+       SUM(f.money)/COUNT(DISTINCT s.st_id) AS ARPU, 
+       SUM(f.money)/(SELECT COUNT(DISTINCT active_users.st_id) FROM active_users) AS ARPAU,
+       (SELECT COUNT(DISTINCT s1.st_id)
+          FROM studs s1
+          JOIN final_project_check f1 ON s1.st_id = f1.st_id
+         WHERE s1.test_grp = s.test_grp
+        )/COUNT(DISTINCT s.st_id)::numeric AS CR_to_buy, 
+        (
+        SELECT COUNT(DISTINCT a2.st_id)
+          FROM active_users a2
+          JOIN final_project_check f2 ON f2.st_id = a2.st_id
+          JOIN studs s2 ON s2.st_id = a2.st_id
+         WHERE s2.test_grp = s.test_grp
+        )/(SELECT COUNT(DISTINCT active_users.st_id) FROM active_users)::numeric 
+            AS CR_active_to_buy, 
+        (
+        SELECT COUNT(DISTINCT am.st_id)
+          FROM active_math_users am
+          JOIN final_project_check fm ON fm.st_id = am.st_id
+          JOIN studs sm ON sm.st_id = am.st_id
+         WHERE sm.test_grp = s.test_grp
+        )/(SELECT COUNT(DISTINCT active_math_users.st_id) FROM active_math_users)::numeric 
+            AS CR_activemath_to_buy
+  FROM studs s 
+  LEFT JOIN final_project_check f ON s.st_id = f.st_id
+ GROUP BY s.test_grp;

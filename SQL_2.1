@@ -1,0 +1,10 @@
+SELECT COUNT(DISTINCT st_id) AS count_hardworking_students
+  FROM (
+        SELECT DATE_TRUNC('month', timest) as date_t,
+               st_id,
+               subject, 
+               SUM(correct::int) as sum_correct
+          FROM peas
+         GROUP BY DATE_TRUNC('month', timest), st_id, subject
+        HAVING SUM(correct::int) >= 20
+        )   AS hardworking_students
